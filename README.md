@@ -1,5 +1,6 @@
 <p align="center">
-    Supranim's Task Manager - Queue jobs that may be processed in the background
+  Supranim's Task Manager<br>
+  Queue jobs that may be processed in the background
 </p>
 
 <p align="center">
@@ -25,33 +26,34 @@
 ### Example usage
 
 ```nim
-  import std/os
+import std/[os, times]
+import pkg/supranim_tasks
 
-  var manager = newTaskManager(tickMs = 10)
+var manager = newTaskManager(tickMs = 10)
 
-  manager.submitTask(Task(
-    id: "task1",
+manager.submitTask(Task(
+  id: "task1",
+  work: proc() =
+    echo "Hello from task1"
+    while true:
+      sleep(1000) # Simulate long-running task
+))
+
+manager.submitTask(
+  initDuration(days = 2),
+  Task(id: "once-after-2-days", work: proc() = echo "run once")
+)
+
+manager.submitRepeatingTask(
+  every = initDuration(minutes = 5),
+  task = Task(id: "repeat-5-minutes",
     work: proc() =
-      echo "Hello from task1"
-      while true:
-        sleep(1000) # Simulate long-running task
-  ))
-  
-  manager.submitTask(
-    initDuration(days = 2),
-    Task(id: "once-after-2-days", work: proc() = echo "run once")
+      echo "This runs every 5 minutes"
   )
+)
 
-  manager.submitRepeatingTask(
-    every = initDuration(minutes = 5),
-    task = Task(id: "repeat-5-minutes",
-      work: proc() =
-        echo "This runs every 5 minutes"
-    )
-  )
-
-  manager.run()
-  manager.close()
+manager.run()
+manager.close()
 ```
 
 ### Roadmap
