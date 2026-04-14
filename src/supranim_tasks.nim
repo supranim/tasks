@@ -150,15 +150,13 @@ proc submitTask*(manager: TaskManager, delay: Duration, task: Task, repeatTask =
   if not isPositiveDuration(delay):
     manager.pending.addLast(task)
     return
-  
-  let scheduleTask = ScheduledTask(
+
+  manager.scheduled.add(ScheduledTask(
     dueAt: getTime() + delay,
     task: task,
     repeating: repeatTask,
     repeatEvery: initDuration()
-  )
-
-  manager.scheduled.add(scheduleTask)
+  ))
   
   echo "Scheduled task '#", task.id, "' to run in ", beautifyDuration(delay)
 
@@ -187,7 +185,10 @@ proc submitRepeatingTask*(manager: TaskManager, every: Duration, task: Task,
     repeating: true,
     repeatEvery: every
   ))
-  true
+
+  echo "Scheduled task '#", task.id, "' to run in ", beautifyDuration(every)
+
+  result = true
 
 proc run*(manager: TaskManager) =
   ## Starts the event loop to process tasks. This will block until the
@@ -240,3 +241,31 @@ proc halt*(manager: TaskManager, delay: Duration): bool =
   tv.tv_usec = clong((delay.inMilliseconds mod 1000) * 1000)
   result = event_base_loopexit(manager.base, addr tv) == 0
 
+when isMainModule:
+  import std/os
+  var manager = newTaskManager(tickMs = 10)
+
+  discard manager.submitTask(Task(
+    id: "task1",
+    work: proc() =
+      echo "Hello from task1"
+      while true:
+        sleep(1000) # Simulate long-running task
+  ))
+
+  manager.submitTask(
+    initDuration(days = 2),
+    Task(id: "once-after-2-days", work: proc() = echo "run once")
+  )
+
+  echo manager.submitRepeatingTask(
+    every = initDuration(minutes = 2),
+    task = Task(id: "repeat-2-days",
+      work: proc() =
+        echo "This runs every 2 minutes"
+    )
+  )
+
+  # discard manager.halt(initDuration(milliseconds = 5000)) # Stop the manager after 5 seconds
+  manager.run()
+  manager.close()
