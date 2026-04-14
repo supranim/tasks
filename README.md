@@ -20,7 +20,7 @@
 - Simple API for submitting and managing tasks
 
 >[!NOTE]
-> While this Task Manager is designed for use in Supranim applications, it can also be used in other Nim projects that need background task processing. Ensure you have Libevent installed and properly linked when using this package.
+> This task manager can also be used in other Nim projects that need background task processing. Ensure you have Libevent installed and properly linked when using this package.
 
 
 ### Example usage

@@ -10,3 +10,4 @@ srcDir        = "src"
 # Dependencies
 
 requires "nim >= 2.0.0"
+requires "libevent >= 0.1.1"
