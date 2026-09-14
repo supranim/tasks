@@ -14,6 +14,8 @@
 
 ## Key features
 - Immediate, delayed (one-shot) and repeating (interval) background tasks
+- Immediate jobs cancel by id: `submit` returns a `JobId`, `cancelJob`
+  drops a still-queued job synchronously (silent, authoritative bool)
 - Wall-clock scheduling on `std/times` (local time): one-shot at a
   `DateTime`, daily and weekly repeats
 - Past one-shot times never fire: the task stays tracked as inactive,
@@ -53,10 +55,12 @@ import pkg/supranim_tasks
 var m = newTaskManager(poolSize = 4)
 
 # Immediate: runs on a worker, callback on the dispatch thread
-discard m.submit(
+let id = m.submit(
   proc(): string = "hello",
   proc(res: string) = echo "got: ", res
 )
+if m.cancelJob(id):
+  echo "was still queued, will never run"
 
 # Named task: runs once after 2 seconds, cancellable by id or name
 discard m.submitDelayed(2000,
@@ -104,7 +108,8 @@ Runnable versions live in [`examples/`](examples/): `basics.nim`
 (immediate/delayed/repeating), `named_tasks.nim`
 (`cancelTask`/`removeTask` by id or name), `nonblocking.nim`
 (concurrent overlapping batch, mixed task kinds, scheduler staying
-responsive while the pool is saturated) and
+responsive while the pool is saturated),
+`cancellable.nim` (immediate `cancelJob` by id) and
 `scheduled.nim` (wall-clock `scheduleAt`/`scheduleDaily`, past times
 staying inactive, `taskStatus`).
 
@@ -114,6 +119,10 @@ staying inactive, `taskStatus`).
 - Daily/weekly tasks chain one-shots: after every fire the next
   occurrence is recomputed from local `now()`, so DST shifts land on
   one 23h/25h day instead of drifting.
+- Chain re-arms demand the next occurrence at least 60s out: a fire
+  landing inside its own target second rolls to the next day/week
+  instead of echoing twice. Explicit same-second schedules still
+  fire ASAP.
 - A past `scheduleAt` never fires and logs nothing: it stays tracked
   as `taskInactive` (name still reserved). `cancelTask` on it is a
   no-op; `removeTask` drops tracking and frees the name.
@@ -128,7 +137,9 @@ staying inactive, `taskStatus`).
 | Proc | Description |
 |---|---|
 | `newTaskManager(poolSize = 4)` | Create the manager; starts the pool and scheduler thread |
-| `submit(job, cb, onError = nil)` | Run `job` now; `cb(res)` or `onError(err)` fires on dispatch |
+| `submit(job, cb, onError = nil)` | Run `job` now; returns a `JobId` (`JobId(0)` when rejected) |
+| `cancelJob(id)` | Cancel a still-queued immediate job; true iff it will never run |
+| `isValid(id)` | True for a real `JobId` (anything but `JobId(0)`) |
 | `submitDelayed(delayMs, job, cb, onError = nil, name = "")` | Run `job` once after `delayMs`; returns a `TimerId` |
 | `submitRepeating(intervalMs, job, cb, onError = nil, name = "")` | Run `job` every `intervalMs` until `cancel`; returns a `TimerId` |
 | `scheduleAt(at, job, cb, onError = nil, name = "")` | Run `job` once at wall-clock `at` (`DateTime`, local); past stays `taskInactive` |
@@ -146,7 +157,7 @@ staying inactive, `taskStatus`).
 | `isRunning()` / `poolSize()` / `rawPool()` | Status, worker count, underlying pool |
 
 ### Roadmap
-- [ ] Task cancellation by id for immediate jobs (pending queue removal)
+- [x] Task cancellation by id for immediate jobs (pending queue removal)
 - [ ] Task prioritization
 - [ ] File logging of task execution
 - [ ] More detailed error handling and reporting for task failures
