@@ -1,38 +1,42 @@
 nimTitle	supranim_tasks	index.html	module supranim_tasks		0
-nim	TaskManager	index.html#TaskManager	type TaskManager		74
-nim	SchedProc	index.html#SchedProc	type SchedProc		93
-nim	SchedOp	index.html#SchedOp	tuple SchedOp		99
-nim	taskArmed	index.html#taskArmed	TaskStatus.taskArmed		101
-nim	taskCancelled	index.html#taskCancelled	TaskStatus.taskCancelled		101
-nim	taskInactive	index.html#taskInactive	TaskStatus.taskInactive		101
-nim	taskUnknown	index.html#taskUnknown	TaskStatus.taskUnknown		101
-nim	TaskStatus	index.html#TaskStatus	enum TaskStatus		101
-nim	nextDailyDelayMsFrom	index.html#nextDailyDelayMsFrom,Time,int,int,int	proc nextDailyDelayMsFrom(nowT: Time; hour, minute, second: int): int		240
-nim	nextWeeklyDelayMsFrom	index.html#nextWeeklyDelayMsFrom,Time,WeekDay,int,int,int	proc nextWeeklyDelayMsFrom(nowT: Time; weekday: WeekDay; hour, minute, second: int): int		256
-nim	newTaskManager	index.html#newTaskManager,int	proc newTaskManager(poolSize = 4): TaskManager		592
-nim	rawPool	index.html#rawPool,TaskManager	proc rawPool(m: TaskManager): ThreadPool		628
-nim	poolSize	index.html#poolSize,TaskManager	proc poolSize(m: TaskManager): int		633
-nim	isRunning	index.html#isRunning,TaskManager	proc isRunning(m: TaskManager): bool		637
-nim	hasTask	index.html#hasTask,TaskManager,string	proc hasTask(m: TaskManager; name: string): bool		645
-nim	hasTask	index.html#hasTask,TaskManager,TimerId	proc hasTask(m: TaskManager; id: TimerId): bool		654
-nim	submit	index.html#submit,TaskManager,proc),proc(T),proc(ref.CatchableError)	proc submit[T](m: TaskManager; job: proc (): T {.closure.};\n          cb: proc (res: T) {.closure.};\n          onError: proc (err: ref CatchableError) {.closure.} = nil): bool		662
-nim	submitDelayed	index.html#submitDelayed,TaskManager,int,proc),proc(T),proc(ref.CatchableError),string	proc submitDelayed[T](m: TaskManager; delayMs: int; job: proc (): T {.closure.};\n                 cb: proc (res: T) {.closure.};\n                 onError: proc (err: ref CatchableError) {.closure.} = nil;\n                 name = ""): TimerId		734
-nim	submitRepeating	index.html#submitRepeating,TaskManager,int,proc),proc(T),proc(ref.CatchableError),string	proc submitRepeating[T](m: TaskManager; intervalMs: int; job: proc (): T {.closure.};\n                   cb: proc (res: T) {.closure.};\n                   onError: proc (err: ref CatchableError) {.closure.} = nil;\n                   name = ""): TimerId		745
-nim	scheduleAt	index.html#scheduleAt,TaskManager,DateTime,proc),proc(T),proc(ref.CatchableError),string	proc scheduleAt[T](m: TaskManager; at: DateTime; job: proc (): T {.closure.};\n              cb: proc (res: T) {.closure.};\n              onError: proc (err: ref CatchableError) {.closure.} = nil;\n              name = ""): TimerId		759
-nim	scheduleDaily	index.html#scheduleDaily,TaskManager,int,int,int,proc),proc(T),proc(ref.CatchableError),string	proc scheduleDaily[T](m: TaskManager; hour, minute: int; second = 0;\n                 job: proc (): T {.closure.}; cb: proc (res: T) {.closure.};\n                 onError: proc (err: ref CatchableError) {.closure.} = nil;\n                 name = ""): TimerId		773
-nim	scheduleWeekly	index.html#scheduleWeekly,TaskManager,WeekDay,int,int,int,proc),proc(T),proc(ref.CatchableError),string	proc scheduleWeekly[T](m: TaskManager; weekday: WeekDay; hour, minute: int;\n                  second = 0; job: proc (): T {.closure.};\n                  cb: proc (res: T) {.closure.};\n                  onError: proc (err: ref CatchableError) {.closure.} = nil;\n                  name = ""): TimerId		791
-nim	taskStatus	index.html#taskStatus,TaskManager,TimerId	proc taskStatus(m: TaskManager; id: TimerId): TaskStatus		824
-nim	taskStatus	index.html#taskStatus,TaskManager,string	proc taskStatus(m: TaskManager; name: string): TaskStatus		833
-nim	cancelTask	index.html#cancelTask,TaskManager,TimerId	proc cancelTask(m: TaskManager; id: TimerId)		845
-nim	cancelTask	index.html#cancelTask,TaskManager,string	proc cancelTask(m: TaskManager; name: string)		859
-nim	cancel	index.html#cancel,TaskManager,TimerId	proc cancel(m: TaskManager; id: TimerId)		871
-nim	removeTask	index.html#removeTask,TaskManager,TimerId	proc removeTask(m: TaskManager; id: TimerId)		875
-nim	removeTask	index.html#removeTask,TaskManager,string	proc removeTask(m: TaskManager; name: string)		889
-nim	stop	index.html#stop,TaskManager	proc stop(m: TaskManager)		914
-nim	shutdown	index.html#shutdown,TaskManager	proc shutdown(m: TaskManager)		922
-nim	halt	index.html#halt,TaskManager,int	proc halt(m: TaskManager; delayMs: int): bool		930
-nim	close	index.html#close,TaskManager	proc close(m: TaskManager)		946
-nimgrp	hastask	index.html#hasTask-procs-all	proc		645
-nimgrp	removetask	index.html#removeTask-procs-all	proc		875
-nimgrp	canceltask	index.html#cancelTask-procs-all	proc		845
-nimgrp	taskstatus	index.html#taskStatus-procs-all	proc		824
+nim	TaskManager	index.html#TaskManager	type TaskManager		76
+nim	SchedProc	index.html#SchedProc	type SchedProc		95
+nim	SchedOp	index.html#SchedOp	tuple SchedOp		101
+nim	taskArmed	index.html#taskArmed	TaskStatus.taskArmed		103
+nim	taskCancelled	index.html#taskCancelled	TaskStatus.taskCancelled		103
+nim	taskInactive	index.html#taskInactive	TaskStatus.taskInactive		103
+nim	taskUnknown	index.html#taskUnknown	TaskStatus.taskUnknown		103
+nim	TaskStatus	index.html#TaskStatus	enum TaskStatus		103
+nim	JobId	index.html#JobId	type JobId		110
+nim	`==`	index.html#==,JobId,JobId	proc `==`(a, b: JobId): bool		245
+nim	isValid	index.html#isValid,JobId	proc isValid(id: JobId): bool		248
+nim	nextDailyDelayMsFrom	index.html#nextDailyDelayMsFrom,Time,int,int,int,int	proc nextDailyDelayMsFrom(nowT: Time; hour, minute, second: int; minLeadMs = 1000): int		340
+nim	nextWeeklyDelayMsFrom	index.html#nextWeeklyDelayMsFrom,Time,WeekDay,int,int,int,int	proc nextWeeklyDelayMsFrom(nowT: Time; weekday: WeekDay; hour, minute, second: int;\n                      minLeadMs = 1000): int		362
+nim	newTaskManager	index.html#newTaskManager,int	proc newTaskManager(poolSize = 4): TaskManager		707
+nim	rawPool	index.html#rawPool,TaskManager	proc rawPool(m: TaskManager): ThreadPool		743
+nim	poolSize	index.html#poolSize,TaskManager	proc poolSize(m: TaskManager): int		748
+nim	isRunning	index.html#isRunning,TaskManager	proc isRunning(m: TaskManager): bool		752
+nim	hasTask	index.html#hasTask,TaskManager,string	proc hasTask(m: TaskManager; name: string): bool		760
+nim	hasTask	index.html#hasTask,TaskManager,TimerId	proc hasTask(m: TaskManager; id: TimerId): bool		769
+nim	submit	index.html#submit,TaskManager,proc),proc(T),proc(ref.CatchableError)	proc submit[T](m: TaskManager; job: proc (): T {.closure.};\n          cb: proc (res: T) {.closure.};\n          onError: proc (err: ref CatchableError) {.closure.} = nil): JobId		777
+nim	cancelJob	index.html#cancelJob,TaskManager,JobId	proc cancelJob(m: TaskManager; id: JobId): bool		808
+nim	submitDelayed	index.html#submitDelayed,TaskManager,int,proc),proc(T),proc(ref.CatchableError),string	proc submitDelayed[T](m: TaskManager; delayMs: int; job: proc (): T {.closure.};\n                 cb: proc (res: T) {.closure.};\n                 onError: proc (err: ref CatchableError) {.closure.} = nil;\n                 name = ""): TimerId		879
+nim	submitRepeating	index.html#submitRepeating,TaskManager,int,proc),proc(T),proc(ref.CatchableError),string	proc submitRepeating[T](m: TaskManager; intervalMs: int; job: proc (): T {.closure.};\n                   cb: proc (res: T) {.closure.};\n                   onError: proc (err: ref CatchableError) {.closure.} = nil;\n                   name = ""): TimerId		890
+nim	scheduleAt	index.html#scheduleAt,TaskManager,DateTime,proc),proc(T),proc(ref.CatchableError),string	proc scheduleAt[T](m: TaskManager; at: DateTime; job: proc (): T {.closure.};\n              cb: proc (res: T) {.closure.};\n              onError: proc (err: ref CatchableError) {.closure.} = nil;\n              name = ""): TimerId		904
+nim	scheduleDaily	index.html#scheduleDaily,TaskManager,int,int,int,proc),proc(T),proc(ref.CatchableError),string	proc scheduleDaily[T](m: TaskManager; hour, minute: int; second = 0;\n                 job: proc (): T {.closure.}; cb: proc (res: T) {.closure.};\n                 onError: proc (err: ref CatchableError) {.closure.} = nil;\n                 name = ""): TimerId		918
+nim	scheduleWeekly	index.html#scheduleWeekly,TaskManager,WeekDay,int,int,int,proc),proc(T),proc(ref.CatchableError),string	proc scheduleWeekly[T](m: TaskManager; weekday: WeekDay; hour, minute: int;\n                  second = 0; job: proc (): T {.closure.};\n                  cb: proc (res: T) {.closure.};\n                  onError: proc (err: ref CatchableError) {.closure.} = nil;\n                  name = ""): TimerId		936
+nim	taskStatus	index.html#taskStatus,TaskManager,TimerId	proc taskStatus(m: TaskManager; id: TimerId): TaskStatus		969
+nim	taskStatus	index.html#taskStatus,TaskManager,string	proc taskStatus(m: TaskManager; name: string): TaskStatus		978
+nim	cancelTask	index.html#cancelTask,TaskManager,TimerId	proc cancelTask(m: TaskManager; id: TimerId)		990
+nim	cancelTask	index.html#cancelTask,TaskManager,string	proc cancelTask(m: TaskManager; name: string)		1004
+nim	cancel	index.html#cancel,TaskManager,TimerId	proc cancel(m: TaskManager; id: TimerId)		1016
+nim	removeTask	index.html#removeTask,TaskManager,TimerId	proc removeTask(m: TaskManager; id: TimerId)		1020
+nim	removeTask	index.html#removeTask,TaskManager,string	proc removeTask(m: TaskManager; name: string)		1034
+nim	stop	index.html#stop,TaskManager	proc stop(m: TaskManager)		1059
+nim	shutdown	index.html#shutdown,TaskManager	proc shutdown(m: TaskManager)		1070
+nim	halt	index.html#halt,TaskManager,int	proc halt(m: TaskManager; delayMs: int): bool		1081
+nim	close	index.html#close,TaskManager	proc close(m: TaskManager)		1097
+nimgrp	hastask	index.html#hasTask-procs-all	proc		760
+nimgrp	removetask	index.html#removeTask-procs-all	proc		1020
+nimgrp	canceltask	index.html#cancelTask-procs-all	proc		990
+nimgrp	taskstatus	index.html#taskStatus-procs-all	proc		969

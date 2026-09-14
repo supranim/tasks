@@ -29,9 +29,17 @@
     <div class="container">
       <h1 class="title">Index</h1>
       Modules: <a href="index.html">supranim_tasks</a>.<br/><p /><h2>API symbols</h2>
-<dl><dt><a name="cancel" href="#cancel"><span>cancel:</span></a></dt><dd><ul class="simple">
+<dl><dt><a name="%60%3D%3D%60" href="#%60%3D%3D%60"><span>`==`:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="supranim_tasks: proc `==`(a, b: JobId): bool" href="index.html#%3D%3D%2CJobId%2CJobId">supranim_tasks: proc `==`(a, b: JobId): bool</a></li>
+          </ul></dd>
+<dt><a name="cancel" href="#cancel"><span>cancel:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
           data-doc-search-tag="supranim_tasks: proc cancel(m: TaskManager; id: TimerId)" href="index.html#cancel%2CTaskManager%2CTimerId">supranim_tasks: proc cancel(m: TaskManager; id: TimerId)</a></li>
+          </ul></dd>
+<dt><a name="cancelJob" href="#cancelJob"><span>cancelJob:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="supranim_tasks: proc cancelJob(m: TaskManager; id: JobId): bool" href="index.html#cancelJob%2CTaskManager%2CJobId">supranim_tasks: proc cancelJob(m: TaskManager; id: JobId): bool</a></li>
           </ul></dd>
 <dt><a name="cancelTask" href="#cancelTask"><span>cancelTask:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
@@ -57,17 +65,27 @@
 <li><a class="reference external"
           data-doc-search-tag="supranim_tasks: proc isRunning(m: TaskManager): bool" href="index.html#isRunning%2CTaskManager">supranim_tasks: proc isRunning(m: TaskManager): bool</a></li>
           </ul></dd>
+<dt><a name="isValid" href="#isValid"><span>isValid:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="supranim_tasks: proc isValid(id: JobId): bool" href="index.html#isValid%2CJobId">supranim_tasks: proc isValid(id: JobId): bool</a></li>
+          </ul></dd>
+<dt><a name="JobId" href="#JobId"><span>JobId:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="supranim_tasks: type JobId" href="index.html#JobId">supranim_tasks: type JobId</a></li>
+          </ul></dd>
 <dt><a name="newTaskManager" href="#newTaskManager"><span>newTaskManager:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
           data-doc-search-tag="supranim_tasks: proc newTaskManager(poolSize = 4): TaskManager" href="index.html#newTaskManager%2Cint">supranim_tasks: proc newTaskManager(poolSize = 4): TaskManager</a></li>
           </ul></dd>
 <dt><a name="nextDailyDelayMsFrom" href="#nextDailyDelayMsFrom"><span>nextDailyDelayMsFrom:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
-          data-doc-search-tag="supranim_tasks: proc nextDailyDelayMsFrom(nowT: Time; hour, minute, second: int): int" href="index.html#nextDailyDelayMsFrom%2CTime%2Cint%2Cint%2Cint">supranim_tasks: proc nextDailyDelayMsFrom(nowT: Time; hour, minute, second: int): int</a></li>
+          data-doc-search-tag="supranim_tasks: proc nextDailyDelayMsFrom(nowT: Time; hour, minute, second: int; minLeadMs = 1000): int" href="index.html#nextDailyDelayMsFrom%2CTime%2Cint%2Cint%2Cint%2Cint">supranim_tasks: proc nextDailyDelayMsFrom(nowT: Time; hour, minute, second: int; minLeadMs = 1000): int</a></li>
           </ul></dd>
 <dt><a name="nextWeeklyDelayMsFrom" href="#nextWeeklyDelayMsFrom"><span>nextWeeklyDelayMsFrom:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
-          data-doc-search-tag="supranim_tasks: proc nextWeeklyDelayMsFrom(nowT: Time; weekday: WeekDay; hour, minute, second: int): int" href="index.html#nextWeeklyDelayMsFrom%2CTime%2CWeekDay%2Cint%2Cint%2Cint">supranim_tasks: proc nextWeeklyDelayMsFrom(nowT: Time; weekday: WeekDay; hour, minute, second: int): int</a></li>
+          data-doc-search-tag="supranim_tasks: proc nextWeeklyDelayMsFrom(nowT: Time; weekday: WeekDay; hour, minute, second: int;
+                      minLeadMs = 1000): int" href="index.html#nextWeeklyDelayMsFrom%2CTime%2CWeekDay%2Cint%2Cint%2Cint%2Cint">supranim_tasks: proc nextWeeklyDelayMsFrom(nowT: Time; weekday: WeekDay; hour, minute, second: int;
+                      minLeadMs = 1000): int</a></li>
           </ul></dd>
 <dt><a name="poolSize" href="#poolSize"><span>poolSize:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
@@ -135,9 +153,9 @@
 <li><a class="reference external"
           data-doc-search-tag="supranim_tasks: proc submit[T](m: TaskManager; job: proc (): T {.closure.};
           cb: proc (res: T) {.closure.};
-          onError: proc (err: ref CatchableError) {.closure.} = nil): bool" href="index.html#submit%2CTaskManager%2Cproc%29%2Cproc%28T%29%2Cproc%28ref.CatchableError%29">supranim_tasks: proc submit[T](m: TaskManager; job: proc (): T {.closure.};
+          onError: proc (err: ref CatchableError) {.closure.} = nil): JobId" href="index.html#submit%2CTaskManager%2Cproc%29%2Cproc%28T%29%2Cproc%28ref.CatchableError%29">supranim_tasks: proc submit[T](m: TaskManager; job: proc (): T {.closure.};
           cb: proc (res: T) {.closure.};
-          onError: proc (err: ref CatchableError) {.closure.} = nil): bool</a></li>
+          onError: proc (err: ref CatchableError) {.closure.} = nil): JobId</a></li>
           </ul></dd>
 <dt><a name="submitDelayed" href="#submitDelayed"><span>submitDelayed:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
@@ -193,7 +211,7 @@
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2026-09-14 11:32:19 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2026-09-14 11:47:40 UTC</small>
       </div>
     </div>
   </div>

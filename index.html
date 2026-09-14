@@ -58,7 +58,8 @@
   <details open>
     <summary><a class="reference reference-toplevel" href="#7" id="57">Types</a></summary>
     <ul class="simple simple-toc-section">
-      <li><a class="reference" href="#SchedOp" title="SchedOp = tuple[run, abort: SchedProc, arg: pointer]">SchedOp</a></li>
+      <li><a class="reference" href="#JobId" title="JobId = distinct int">JobId</a></li>
+<li><a class="reference" href="#SchedOp" title="SchedOp = tuple[run, abort: SchedProc, arg: pointer]">SchedOp</a></li>
 <li><a class="reference" href="#SchedProc" title="SchedProc = proc (ctl: ptr CtlBlock; arg: pointer) {.nimcall, gcsafe.}">SchedProc</a></li>
 <li><a class="reference" href="#TaskManager" title="TaskManager = ref object">TaskManager</a></li>
 <li><a class="reference" href="#TaskStatus" title="TaskStatus = enum
@@ -74,8 +75,16 @@
   <details open>
     <summary><a class="reference reference-toplevel" href="#12" id="62">Procs</a></summary>
     <ul class="simple simple-toc-section">
-      <ul class="simple nested-toc-section">cancel
+      <ul class="simple nested-toc-section">==
+  <li><a class="reference" href="#%3D%3D%2CJobId%2CJobId" title="`==`(a, b: JobId): bool">`==`(a, b: JobId): bool</a></li>
+
+</ul>
+<ul class="simple nested-toc-section">cancel
   <li><a class="reference" href="#cancel%2CTaskManager%2CTimerId" title="cancel(m: TaskManager; id: TimerId)">cancel(m: TaskManager; id: TimerId)</a></li>
+
+</ul>
+<ul class="simple nested-toc-section">cancelJob
+  <li><a class="reference" href="#cancelJob%2CTaskManager%2CJobId" title="cancelJob(m: TaskManager; id: JobId): bool">cancelJob(m: TaskManager; id: JobId): bool</a></li>
 
 </ul>
 <ul class="simple nested-toc-section">cancelTask
@@ -100,16 +109,22 @@
   <li><a class="reference" href="#isRunning%2CTaskManager" title="isRunning(m: TaskManager): bool">isRunning(m: TaskManager): bool</a></li>
 
 </ul>
+<ul class="simple nested-toc-section">isValid
+  <li><a class="reference" href="#isValid%2CJobId" title="isValid(id: JobId): bool">isValid(id: JobId): bool</a></li>
+
+</ul>
 <ul class="simple nested-toc-section">newTaskManager
   <li><a class="reference" href="#newTaskManager%2Cint" title="newTaskManager(poolSize = 4): TaskManager">newTaskManager(poolSize = 4): TaskManager</a></li>
 
 </ul>
 <ul class="simple nested-toc-section">nextDailyDelayMsFrom
-  <li><a class="reference" href="#nextDailyDelayMsFrom%2CTime%2Cint%2Cint%2Cint" title="nextDailyDelayMsFrom(nowT: Time; hour, minute, second: int): int">nextDailyDelayMsFrom(nowT: Time; hour, minute, second: int): int</a></li>
+  <li><a class="reference" href="#nextDailyDelayMsFrom%2CTime%2Cint%2Cint%2Cint%2Cint" title="nextDailyDelayMsFrom(nowT: Time; hour, minute, second: int; minLeadMs = 1000): int">nextDailyDelayMsFrom(nowT: Time; hour, minute, second: int; minLeadMs = 1000): int</a></li>
 
 </ul>
 <ul class="simple nested-toc-section">nextWeeklyDelayMsFrom
-  <li><a class="reference" href="#nextWeeklyDelayMsFrom%2CTime%2CWeekDay%2Cint%2Cint%2Cint" title="nextWeeklyDelayMsFrom(nowT: Time; weekday: WeekDay; hour, minute, second: int): int">nextWeeklyDelayMsFrom(nowT: Time; weekday: WeekDay; hour, minute, second: int): int</a></li>
+  <li><a class="reference" href="#nextWeeklyDelayMsFrom%2CTime%2CWeekDay%2Cint%2Cint%2Cint%2Cint" title="nextWeeklyDelayMsFrom(nowT: Time; weekday: WeekDay; hour, minute, second: int;
+                      minLeadMs = 1000): int">nextWeeklyDelayMsFrom(nowT: Time; weekday: WeekDay; hour, minute, second: int;
+                      minLeadMs = 1000): int</a></li>
 
 </ul>
 <ul class="simple nested-toc-section">poolSize
@@ -168,9 +183,9 @@
 <ul class="simple nested-toc-section">submit
   <li><a class="reference" href="#submit%2CTaskManager%2Cproc%29%2Cproc%28T%29%2Cproc%28ref.CatchableError%29" title="submit[T](m: TaskManager; job: proc (): T {.closure.};
           cb: proc (res: T) {.closure.};
-          onError: proc (err: ref CatchableError) {.closure.} = nil): bool">submit[T](m: TaskManager; job: proc (): T {.closure.};
+          onError: proc (err: ref CatchableError) {.closure.} = nil): JobId">submit[T](m: TaskManager; job: proc (): T {.closure.};
           cb: proc (res: T) {.closure.};
-          onError: proc (err: ref CatchableError) {.closure.} = nil): bool</a></li>
+          onError: proc (err: ref CatchableError) {.closure.} = nil): JobId</a></li>
 
 </ul>
 <ul class="simple nested-toc-section">submitDelayed
@@ -210,7 +225,7 @@
     
     <div id="tocRoot"></div>
     
-    <p class="module-desc">A tiny task manager built on powpow: a <tt class="docutils literal"><span class="pre"><span class="Identifier">ThreadPool</span></span></tt> for execution plus a private scheduler <tt class="docutils literal"><span class="pre"><span class="Identifier">Loop</span></span></tt> (own thread) for delayed one-shot and repeating tasks.<ul class="simple"><li>Immediate work goes straight to the pool: jobs run on worker threads, <tt class="docutils literal"><span class="pre"><span class="Identifier">cb</span></span></tt>/<tt class="docutils literal"><span class="pre"><span class="Identifier">onError</span></span></tt> fire serialized on the pool dispatch thread (never on the caller's thread — lock shared state there).</li>
+    <p class="module-desc">A tiny task manager built on powpow: a <tt class="docutils literal"><span class="pre"><span class="Identifier">ThreadPool</span></span></tt> for execution plus a private scheduler <tt class="docutils literal"><span class="pre"><span class="Identifier">Loop</span></span></tt> (own thread) for delayed one-shot and repeating tasks.<ul class="simple"><li>Immediate work goes straight to the pool: jobs run on worker threads, <tt class="docutils literal"><span class="pre"><span class="Identifier">cb</span></span></tt>/<tt class="docutils literal"><span class="pre"><span class="Identifier">onError</span></span></tt> fire serialized on the pool dispatch thread (never on the caller's thread — lock shared state there). <tt class="docutils literal"><span class="pre"><span class="Identifier">submit</span></span></tt> returns a <tt class="docutils literal"><span class="pre"><span class="Identifier">JobId</span></span></tt>; <tt class="docutils literal"><span class="pre"><span class="Identifier">cancelJob</span></span></tt> removes a still-queued job synchronously (running jobs cannot be preempted).</li>
 <li>Everything for the scheduler thread (timer registration, cancels, removals, halts, loop stop) crosses as a <tt class="docutils literal"><span class="pre"><span class="Identifier">SchedOp</span></span></tt>: one proc plus one unmanaged arg. A heartbeat callback drains the pending ops on the scheduler thread — no managed closure is ever posted across threads, so the per-thread cycle tables stay consistent.</li>
 <li>Delayed/repeating tasks may carry a <tt class="docutils literal"><span class="pre"><span class="Identifier">name</span></span></tt>: <tt class="docutils literal"><span class="pre"><span class="Identifier">cancelTask</span></span></tt> drops the timer, <tt class="docutils literal"><span class="pre"><span class="Identifier">removeTask</span></span></tt> additionally frees the name for reuse and guarantees no further fires. Unnamed tasks are tracked by id only.</li>
 <li>Wall-clock scheduling on <tt class="docutils literal"><span class="pre"><span class="Identifier">std</span><span class="Operator">/</span><span class="Identifier">times</span></span></tt> (local time): <tt class="docutils literal"><span class="pre"><span class="Identifier">scheduleAt</span></span></tt> runs once at a <tt class="docutils literal"><span class="pre"><span class="Identifier">DateTime</span></span></tt> (past times stay tracked as <tt class="docutils literal"><span class="pre"><span class="Identifier">taskInactive</span></span></tt> and never fire); <tt class="docutils literal"><span class="pre"><span class="Identifier">scheduleDaily</span></span></tt>/<tt class="docutils literal"><span class="pre"><span class="Identifier">scheduleWeekly</span></span></tt> re-arm per occurrence. <tt class="docutils literal"><span class="pre"><span class="Identifier">taskStatus</span></span></tt> reports <tt class="docutils literal"><span class="pre"><span class="Identifier">taskArmed</span></span></tt>/<tt class="docutils literal"><span class="pre"><span class="Identifier">taskCancelled</span></span></tt>/<tt class="docutils literal"><span class="pre"><span class="Identifier">taskInactive</span></span></tt>/<tt class="docutils literal"><span class="pre"><span class="Identifier">taskUnknown</span></span></tt> per id or name.</li>
@@ -222,7 +237,15 @@
     <div class="section" id="7">
   <h1><a class="toc-backref" href="#7">Types</a></h1>
   <dl class="item">
-    <div id="SchedOp">
+    <div id="JobId">
+  <dt><pre><a href="#JobId"><span class="Identifier">JobId</span></a> <span class="Other">=</span> <span class="Keyword">distinct</span> <span class="Identifier">int</span></pre></dt>
+  <dd>
+    
+    Handle for one immediate (<tt class="docutils literal"><span class="pre"><span class="Identifier">submit</span></span></tt>) job. <tt class="docutils literal"><span class="pre"><span class="Identifier">JobId</span><span class="Punctuation">(</span><span class="DecNumber">0</span><span class="Punctuation">)</span></span></tt> is invalid (submission rejected while stopping/closed).
+    
+  </dd>
+</div>
+<div id="SchedOp">
   <dt><pre><a href="#SchedOp"><span class="Identifier">SchedOp</span></a> <span class="Other">=</span> <span class="Keyword">tuple</span><span class="Other">[</span><span class="Identifier">run</span><span class="Other">,</span> <span class="Identifier">abort</span><span class="Other">:</span> <a href="#SchedProc"><span class="Identifier">SchedProc</span></a><span class="Other">,</span> <span class="Identifier">arg</span><span class="Other">:</span> <span class="Identifier">pointer</span><span class="Other">]</span></pre></dt>
   <dd>
     
@@ -264,12 +287,35 @@
 <div class="section" id="12">
   <h1><a class="toc-backref" href="#12">Procs</a></h1>
   <dl class="item">
-    <div id="cancel-procs-all">
+    <div id="==-procs-all">
+  <div id="==,JobId,JobId">
+  <dt><pre><span class="Keyword">proc</span> <a href="#%3D%3D%2CJobId%2CJobId"><span class="Identifier">`==`</span></a><span class="Other">(</span><span class="Identifier">a</span><span class="Other">,</span> <span class="Identifier">b</span><span class="Other">:</span> <a href="#JobId"><span class="Identifier">JobId</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> {.<span class="Identifier">borrow</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
+  <dd>
+    
+    Job ids compare by value; <tt class="docutils literal"><span class="pre"><span class="Identifier">JobId</span><span class="Punctuation">(</span><span class="DecNumber">0</span><span class="Punctuation">)</span></span></tt> is the invalid sentinel.
+    
+  </dd>
+</div>
+
+</div>
+<div id="cancel-procs-all">
   <div id="cancel,TaskManager,TimerId">
   <dt><pre><span class="Keyword">proc</span> <a href="#cancel%2CTaskManager%2CTimerId"><span class="Identifier">cancel</span></a><span class="Other">(</span><span class="Identifier">m</span><span class="Other">:</span> <a href="#TaskManager"><span class="Identifier">TaskManager</span></a><span class="Other">;</span> <span class="Identifier">id</span><span class="Other">:</span> <span class="Identifier">TimerId</span><span class="Other">)</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
     Alias of <tt class="docutils literal"><span class="pre"><span class="Identifier">cancelTask</span></span></tt> by id.
+    
+  </dd>
+</div>
+
+</div>
+<div id="cancelJob-procs-all">
+  <div id="cancelJob,TaskManager,JobId">
+  <dt><pre><span class="Keyword">proc</span> <a href="#cancelJob%2CTaskManager%2CJobId"><span class="Identifier">cancelJob</span></a><span class="Other">(</span><span class="Identifier">m</span><span class="Other">:</span> <a href="#TaskManager"><span class="Identifier">TaskManager</span></a><span class="Other">;</span> <span class="Identifier">id</span><span class="Other">:</span> <a href="#JobId"><span class="Identifier">JobId</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">KeyError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+    <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
+  <dd>
+    
+    Cancel one immediate job by id. Returns true iff the job was still queued: it will never run and neither callback fires. A running, finished or unknown id returns false — a running job runs to completion and delivers normally (jobs cannot be preempted). Takes effect synchronously (lock-guarded, no heartbeat delay), so a true return is authoritative at call time. Thread-safe, including from inside callbacks.
     
   </dd>
 </div>
@@ -351,6 +397,17 @@
 </div>
 
 </div>
+<div id="isValid-procs-all">
+  <div id="isValid,JobId">
+  <dt><pre><span class="Keyword">proc</span> <a href="#isValid%2CJobId"><span class="Identifier">isValid</span></a><span class="Other">(</span><span class="Identifier">id</span><span class="Other">:</span> <a href="#JobId"><span class="Identifier">JobId</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> {.<span class="Identifier">inline</span><span class="Other">,</span> <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
+  <dd>
+    
+    True for a real submission id (anything but <tt class="docutils literal"><span class="pre"><span class="Identifier">JobId</span><span class="Punctuation">(</span><span class="DecNumber">0</span><span class="Punctuation">)</span></span></tt>).
+    
+  </dd>
+</div>
+
+</div>
 <div id="newTaskManager-procs-all">
   <div id="newTaskManager,int">
   <dt><pre><span class="Keyword">proc</span> <a href="#newTaskManager%2Cint"><span class="Identifier">newTaskManager</span></a><span class="Other">(</span><span class="Identifier">poolSize</span> <span class="Other">=</span> <span class="DecNumber">4</span><span class="Other">)</span><span class="Other">:</span> <a href="#TaskManager"><span class="Identifier">TaskManager</span></a> {.
@@ -365,25 +422,26 @@
 
 </div>
 <div id="nextDailyDelayMsFrom-procs-all">
-  <div id="nextDailyDelayMsFrom,Time,int,int,int">
-  <dt><pre><span class="Keyword">proc</span> <a href="#nextDailyDelayMsFrom%2CTime%2Cint%2Cint%2Cint"><span class="Identifier">nextDailyDelayMsFrom</span></a><span class="Other">(</span><span class="Identifier">nowT</span><span class="Other">:</span> <span class="Identifier">Time</span><span class="Other">;</span> <span class="Identifier">hour</span><span class="Other">,</span> <span class="Identifier">minute</span><span class="Other">,</span> <span class="Identifier">second</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">int</span> {.
-    <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
+  <div id="nextDailyDelayMsFrom,Time,int,int,int,int">
+  <dt><pre><span class="Keyword">proc</span> <a href="#nextDailyDelayMsFrom%2CTime%2Cint%2Cint%2Cint%2Cint"><span class="Identifier">nextDailyDelayMsFrom</span></a><span class="Other">(</span><span class="Identifier">nowT</span><span class="Other">:</span> <span class="Identifier">Time</span><span class="Other">;</span> <span class="Identifier">hour</span><span class="Other">,</span> <span class="Identifier">minute</span><span class="Other">,</span> <span class="Identifier">second</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">;</span>
+                          <span class="Identifier">minLeadMs</span> <span class="Other">=</span> <span class="DecNumber">1000</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">int</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+    <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
-    Milliseconds from <tt class="docutils literal"><span class="pre"><span class="Identifier">nowT</span></span></tt> to the next local <tt class="docutils literal"><span class="pre"><span class="Identifier">hour</span><span class="Punctuation">:</span><span class="Identifier">minute</span><span class="Punctuation">:</span><span class="Identifier">second</span></span></tt> (today when still future, else tomorrow). Public so callers can preview when a daily task will fire.
+    Milliseconds from <tt class="docutils literal"><span class="pre"><span class="Identifier">nowT</span></span></tt> to the next local <tt class="docutils literal"><span class="pre"><span class="Identifier">hour</span><span class="Punctuation">:</span><span class="Identifier">minute</span><span class="Punctuation">:</span><span class="Identifier">second</span></span></tt> at least <tt class="docutils literal"><span class="pre"><span class="Identifier">minLeadMs</span></span></tt> out (today when still future enough, else tomorrow, stepping whole days so DST stays calendar-correct). Public so callers can preview when a daily task will fire. The lead exists for chains: a fire landing inside its own target second would otherwise recompute a ~0ms delay and echo the same occurrence twice.
     
   </dd>
 </div>
 
 </div>
 <div id="nextWeeklyDelayMsFrom-procs-all">
-  <div id="nextWeeklyDelayMsFrom,Time,WeekDay,int,int,int">
-  <dt><pre><span class="Keyword">proc</span> <a href="#nextWeeklyDelayMsFrom%2CTime%2CWeekDay%2Cint%2Cint%2Cint"><span class="Identifier">nextWeeklyDelayMsFrom</span></a><span class="Other">(</span><span class="Identifier">nowT</span><span class="Other">:</span> <span class="Identifier">Time</span><span class="Other">;</span> <span class="Identifier">weekday</span><span class="Other">:</span> <span class="Identifier">WeekDay</span><span class="Other">;</span>
-                           <span class="Identifier">hour</span><span class="Other">,</span> <span class="Identifier">minute</span><span class="Other">,</span> <span class="Identifier">second</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">int</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
-    <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
+  <div id="nextWeeklyDelayMsFrom,Time,WeekDay,int,int,int,int">
+  <dt><pre><span class="Keyword">proc</span> <a href="#nextWeeklyDelayMsFrom%2CTime%2CWeekDay%2Cint%2Cint%2Cint%2Cint"><span class="Identifier">nextWeeklyDelayMsFrom</span></a><span class="Other">(</span><span class="Identifier">nowT</span><span class="Other">:</span> <span class="Identifier">Time</span><span class="Other">;</span> <span class="Identifier">weekday</span><span class="Other">:</span> <span class="Identifier">WeekDay</span><span class="Other">;</span>
+                           <span class="Identifier">hour</span><span class="Other">,</span> <span class="Identifier">minute</span><span class="Other">,</span> <span class="Identifier">second</span><span class="Other">:</span> <span class="Identifier">int</span><span class="Other">;</span> <span class="Identifier">minLeadMs</span> <span class="Other">=</span> <span class="DecNumber">1000</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">int</span> {.
+    <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
-    Milliseconds from <tt class="docutils literal"><span class="pre"><span class="Identifier">nowT</span></span></tt> to the next local <tt class="docutils literal"><span class="pre"><span class="Identifier">weekday</span></span></tt> + <tt class="docutils literal"><span class="pre"><span class="Identifier">hour</span><span class="Punctuation">:</span><span class="Identifier">minute</span><span class="Punctuation">:</span><span class="Identifier">second</span></span></tt> (this week when still future, else next week). Public so callers can preview when a weekly task fires.
+    Milliseconds from <tt class="docutils literal"><span class="pre"><span class="Identifier">nowT</span></span></tt> to the next local <tt class="docutils literal"><span class="pre"><span class="Identifier">weekday</span></span></tt> + <tt class="docutils literal"><span class="pre"><span class="Identifier">hour</span><span class="Punctuation">:</span><span class="Identifier">minute</span><span class="Punctuation">:</span><span class="Identifier">second</span></span></tt> at least <tt class="docutils literal"><span class="pre"><span class="Identifier">minLeadMs</span></span></tt> out (this week when still future enough, else next week, stepping whole weeks). Same echo protection as <tt class="docutils literal"><span class="pre"><span class="Identifier">nextDailyDelayMsFrom</span></span></tt>.
     
   </dd>
 </div>
@@ -479,7 +537,7 @@
                                 <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
-    Immediate stop: like <tt class="docutils literal"><span class="pre"><span class="Identifier">stop</span></span></tt>, but jobs still queued (never started) are discarded — their callbacks never fire. In-flight jobs finish and deliver. Blocks. Idempotent. Must run outside pool jobs/callbacks (it joins pool threads).
+    Immediate stop: like <tt class="docutils literal"><span class="pre"><span class="Identifier">stop</span></span></tt>, but jobs still queued (never started) are discarded — their callbacks never fire, and their job cells are reaped here. In-flight jobs finish and deliver. Blocks. Idempotent. Must run outside pool jobs/callbacks (it joins pool threads).
     
   </dd>
 </div>
@@ -490,7 +548,7 @@
   <dt><pre><span class="Keyword">proc</span> <a href="#stop%2CTaskManager"><span class="Identifier">stop</span></a><span class="Other">(</span><span class="Identifier">m</span><span class="Other">:</span> <a href="#TaskManager"><span class="Identifier">TaskManager</span></a><span class="Other">)</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">Exception</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">RootEffect</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
-    Graceful stop: reject new submissions, drop pending timers, let the pool drain queued jobs (every queued job still runs and delivers). Blocks until the pool is torn down. Idempotent. Must run outside pool jobs/callbacks (it joins pool threads).
+    Graceful stop: reject new submissions, drop pending timers, let the pool drain queued jobs (every queued job still runs and delivers, cancelled immediates stay silent). Blocks until the pool is torn down. Idempotent. Must run outside pool jobs/callbacks (it joins pool threads).
     
   </dd>
 </div>
@@ -500,10 +558,10 @@
   <div id="submit,TaskManager,proc),proc(T),proc(ref.CatchableError)">
   <dt><pre><span class="Keyword">proc</span> <a href="#submit%2CTaskManager%2Cproc%29%2Cproc%28T%29%2Cproc%28ref.CatchableError%29"><span class="Identifier">submit</span></a><span class="Other">[</span><span class="Identifier">T</span><span class="Other">]</span><span class="Other">(</span><span class="Identifier">m</span><span class="Other">:</span> <a href="#TaskManager"><span class="Identifier">TaskManager</span></a><span class="Other">;</span> <span class="Identifier">job</span><span class="Other">:</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">T</span> {.<span class="Identifier">closure</span>.}<span class="Other">;</span>
                <span class="Identifier">cb</span><span class="Other">:</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Identifier">res</span><span class="Other">:</span> <span class="Identifier">T</span><span class="Other">)</span> {.<span class="Identifier">closure</span>.}<span class="Other">;</span>
-               <span class="Identifier">onError</span><span class="Other">:</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Identifier">err</span><span class="Other">:</span> <span class="Keyword">ref</span> <span class="Identifier">CatchableError</span><span class="Other">)</span> {.<span class="Identifier">closure</span>.} <span class="Other">=</span> <span class="Keyword">nil</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span></pre></dt>
+               <span class="Identifier">onError</span><span class="Other">:</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Identifier">err</span><span class="Other">:</span> <span class="Keyword">ref</span> <span class="Identifier">CatchableError</span><span class="Other">)</span> {.<span class="Identifier">closure</span>.} <span class="Other">=</span> <span class="Keyword">nil</span><span class="Other">)</span><span class="Other">:</span> <a href="#JobId"><span class="Identifier">JobId</span></a></pre></dt>
   <dd>
     
-    <p>Queue <tt class="docutils literal"><span class="pre"><span class="Identifier">job</span></span></tt> for immediate execution on a pool worker. <tt class="docutils literal"><span class="pre"><span class="Identifier">cb</span><span class="Punctuation">(</span><span class="Identifier">res</span><span class="Punctuation">)</span></span></tt> fires on the pool dispatch thread; <tt class="docutils literal"><span class="pre"><span class="Identifier">onError</span><span class="Punctuation">(</span><span class="Identifier">err</span><span class="Punctuation">)</span></span></tt> instead when the job raises. Returns false when stopping/closed or the pool is already torn down — then neither callback fires.</p>
+    <p>Queue <tt class="docutils literal"><span class="pre"><span class="Identifier">job</span></span></tt> for immediate execution on a pool worker. <tt class="docutils literal"><span class="pre"><span class="Identifier">cb</span><span class="Punctuation">(</span><span class="Identifier">res</span><span class="Punctuation">)</span></span></tt> fires on the pool dispatch thread; <tt class="docutils literal"><span class="pre"><span class="Identifier">onError</span><span class="Punctuation">(</span><span class="Identifier">err</span><span class="Punctuation">)</span></span></tt> instead when the job raises. Returns a <tt class="docutils literal"><span class="pre"><span class="Identifier">JobId</span></span></tt> for <tt class="docutils literal"><span class="pre"><span class="Identifier">cancelJob</span></span></tt>, or <tt class="docutils literal"><span class="pre"><span class="Identifier">JobId</span><span class="Punctuation">(</span><span class="DecNumber">0</span><span class="Punctuation">)</span></span></tt> when stopping/closed or the pool is already torn down — then neither callback fires.</p>
 <p>Thread-safe: may be called from any thread, including from inside callbacks. See the module contract about captured references.</p>
 
     
@@ -570,7 +628,7 @@
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2026-09-14 11:32:19 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2026-09-14 11:47:40 UTC</small>
       </div>
     </div>
   </div>
