@@ -16,73 +16,184 @@
 <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA3XAAAN1wFCKJt4AAAAB3RJTUUH4QQQEwksSS9ZWwAAAk1JREFUWMPtll2ITVEUx39nn/O7Y5qR8f05wtCUUr6ZIS++8pEnkZInPImneaCQ5METNdOkeFBKUhMPRIkHKfEuUZSUlGlKPN2TrgfncpvmnntnmlEyq1Z7t89/rf9a6+y99oZxGZf/XeIq61EdtgKXgdXA0xrYAvBjOIF1AI9zvjcC74BSpndrJPkBWDScTF8Aa4E3wDlgHbASaANmVqlcCnwHvgDvgVfAJ+AikAAvgfVZwLnSVZHZaOuKoQi3ZOMi4NkYkpe1p4J7A8BpYAD49hfIy/oqG0+hLomiKP2L5L+1ubn5115S+3OAn4EnwBlgMzCjyt6ZAnQCJ4A7wOs88iRJHvw50HoujuPBoCKwHWiosy8MdfZnAdcHk8dxXFJ3VQbQlCTJvRBCGdRbD4M6uc5glpY3eAihpN5S5w12diSEcCCEcKUO4ljdr15T76ur1FDDLIQQ3qv71EdDOe3Kxj3leRXyk+pxdWnFWod6Wt2bY3de3aSuUHcPBVimHs7mK9WrmeOF6lR1o9qnzskh2ar2qm1qizpfXaPeVGdlmGN5pb09qMxz1Xb1kLqgzn1RyH7JUXW52lr5e/Kqi9qpto7V1atuUzfnARrV7jEib1T76gG2qxdGmXyiekkt1GswPTtek0aBfJp6YySGBfWg2tPQ0FAYgf1stUfdmdcjarbYJEniKIq6gY/Aw+zWHAC+p2labGpqiorFYgGYCEzN7oQdQClN07O1/EfDyGgC0ALMBdYAi4FyK+4H3gLPsxfR1zRNi+NP7nH5J+QntnXe5B5mpfQAAAAASUVORK5CYII=">
 
 <!-- CSS -->
-<link rel="stylesheet" type="text/css" href="nimdoc.out.css?v=2.2.8">
+<link rel="stylesheet" type="text/css" href="nimdoc.out.css?v=2.2.12">
 
 <!-- JS -->
-<script type="text/javascript" src="dochack.js?v=2.2.8"></script>
+<script type="text/javascript" src="dochack.js?v=2.2.12"></script>
 </head>
 <body>
   <div class="document" id="documentId">
+    <input type="checkbox" id="nav-toggle" hidden>
+    <label for="nav-toggle" id="nav-burger">&#9776;</label>
+    <label for="nav-toggle" id="nav-overlay"></label>
     <div class="container">
       <h1 class="title">Index</h1>
       Modules: <a href="index.html">supranim_tasks</a>.<br/><p /><h2>API symbols</h2>
-<dl><dt><a name="close" href="#close"><span>close:</span></a></dt><dd><ul class="simple">
+<dl><dt><a name="cancel" href="#cancel"><span>cancel:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
-          data-doc-search-tag="supranim_tasks: proc close(manager: var TaskManager)" href="index.html#close%2CTaskManager">supranim_tasks: proc close(manager: var TaskManager)</a></li>
+          data-doc-search-tag="supranim_tasks: proc cancel(m: TaskManager; id: TimerId)" href="index.html#cancel%2CTaskManager%2CTimerId">supranim_tasks: proc cancel(m: TaskManager; id: TimerId)</a></li>
+          </ul></dd>
+<dt><a name="cancelTask" href="#cancelTask"><span>cancelTask:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="supranim_tasks: proc cancelTask(m: TaskManager; name: string)" href="index.html#cancelTask%2CTaskManager%2Cstring">supranim_tasks: proc cancelTask(m: TaskManager; name: string)</a></li>
+          <li><a class="reference external"
+          data-doc-search-tag="supranim_tasks: proc cancelTask(m: TaskManager; id: TimerId)" href="index.html#cancelTask%2CTaskManager%2CTimerId">supranim_tasks: proc cancelTask(m: TaskManager; id: TimerId)</a></li>
+          </ul></dd>
+<dt><a name="close" href="#close"><span>close:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="supranim_tasks: proc close(m: TaskManager)" href="index.html#close%2CTaskManager">supranim_tasks: proc close(m: TaskManager)</a></li>
           </ul></dd>
 <dt><a name="halt" href="#halt"><span>halt:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
-          data-doc-search-tag="supranim_tasks: proc halt(manager: TaskManager; delay: Duration): bool" href="index.html#halt%2CTaskManager%2CDuration">supranim_tasks: proc halt(manager: TaskManager; delay: Duration): bool</a></li>
+          data-doc-search-tag="supranim_tasks: proc halt(m: TaskManager; delayMs: int): bool" href="index.html#halt%2CTaskManager%2Cint">supranim_tasks: proc halt(m: TaskManager; delayMs: int): bool</a></li>
+          </ul></dd>
+<dt><a name="hasTask" href="#hasTask"><span>hasTask:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="supranim_tasks: proc hasTask(m: TaskManager; name: string): bool" href="index.html#hasTask%2CTaskManager%2Cstring">supranim_tasks: proc hasTask(m: TaskManager; name: string): bool</a></li>
+          <li><a class="reference external"
+          data-doc-search-tag="supranim_tasks: proc hasTask(m: TaskManager; id: TimerId): bool" href="index.html#hasTask%2CTaskManager%2CTimerId">supranim_tasks: proc hasTask(m: TaskManager; id: TimerId): bool</a></li>
+          </ul></dd>
+<dt><a name="isRunning" href="#isRunning"><span>isRunning:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="supranim_tasks: proc isRunning(m: TaskManager): bool" href="index.html#isRunning%2CTaskManager">supranim_tasks: proc isRunning(m: TaskManager): bool</a></li>
           </ul></dd>
 <dt><a name="newTaskManager" href="#newTaskManager"><span>newTaskManager:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
-          data-doc-search-tag="supranim_tasks: proc newTaskManager(tickMs = 10): TaskManager" href="index.html#newTaskManager%2Cint">supranim_tasks: proc newTaskManager(tickMs = 10): TaskManager</a></li>
+          data-doc-search-tag="supranim_tasks: proc newTaskManager(poolSize = 4): TaskManager" href="index.html#newTaskManager%2Cint">supranim_tasks: proc newTaskManager(poolSize = 4): TaskManager</a></li>
           </ul></dd>
-<dt><a name="run" href="#run"><span>run:</span></a></dt><dd><ul class="simple">
+<dt><a name="nextDailyDelayMsFrom" href="#nextDailyDelayMsFrom"><span>nextDailyDelayMsFrom:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
-          data-doc-search-tag="supranim_tasks: proc run(manager: TaskManager)" href="index.html#run%2CTaskManager">supranim_tasks: proc run(manager: TaskManager)</a></li>
+          data-doc-search-tag="supranim_tasks: proc nextDailyDelayMsFrom(nowT: Time; hour, minute, second: int): int" href="index.html#nextDailyDelayMsFrom%2CTime%2Cint%2Cint%2Cint">supranim_tasks: proc nextDailyDelayMsFrom(nowT: Time; hour, minute, second: int): int</a></li>
           </ul></dd>
-<dt><a name="ScheduledTask" href="#ScheduledTask"><span>ScheduledTask:</span></a></dt><dd><ul class="simple">
+<dt><a name="nextWeeklyDelayMsFrom" href="#nextWeeklyDelayMsFrom"><span>nextWeeklyDelayMsFrom:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
-          data-doc-search-tag="supranim_tasks: object ScheduledTask" href="index.html#ScheduledTask">supranim_tasks: object ScheduledTask</a></li>
+          data-doc-search-tag="supranim_tasks: proc nextWeeklyDelayMsFrom(nowT: Time; weekday: WeekDay; hour, minute, second: int): int" href="index.html#nextWeeklyDelayMsFrom%2CTime%2CWeekDay%2Cint%2Cint%2Cint">supranim_tasks: proc nextWeeklyDelayMsFrom(nowT: Time; weekday: WeekDay; hour, minute, second: int): int</a></li>
+          </ul></dd>
+<dt><a name="poolSize" href="#poolSize"><span>poolSize:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="supranim_tasks: proc poolSize(m: TaskManager): int" href="index.html#poolSize%2CTaskManager">supranim_tasks: proc poolSize(m: TaskManager): int</a></li>
+          </ul></dd>
+<dt><a name="rawPool" href="#rawPool"><span>rawPool:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="supranim_tasks: proc rawPool(m: TaskManager): ThreadPool" href="index.html#rawPool%2CTaskManager">supranim_tasks: proc rawPool(m: TaskManager): ThreadPool</a></li>
+          </ul></dd>
+<dt><a name="removeTask" href="#removeTask"><span>removeTask:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="supranim_tasks: proc removeTask(m: TaskManager; name: string)" href="index.html#removeTask%2CTaskManager%2Cstring">supranim_tasks: proc removeTask(m: TaskManager; name: string)</a></li>
+          <li><a class="reference external"
+          data-doc-search-tag="supranim_tasks: proc removeTask(m: TaskManager; id: TimerId)" href="index.html#removeTask%2CTaskManager%2CTimerId">supranim_tasks: proc removeTask(m: TaskManager; id: TimerId)</a></li>
+          </ul></dd>
+<dt><a name="SchedOp" href="#SchedOp"><span>SchedOp:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="supranim_tasks: tuple SchedOp" href="index.html#SchedOp">supranim_tasks: tuple SchedOp</a></li>
+          </ul></dd>
+<dt><a name="SchedProc" href="#SchedProc"><span>SchedProc:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="supranim_tasks: type SchedProc" href="index.html#SchedProc">supranim_tasks: type SchedProc</a></li>
+          </ul></dd>
+<dt><a name="scheduleAt" href="#scheduleAt"><span>scheduleAt:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="supranim_tasks: proc scheduleAt[T](m: TaskManager; at: DateTime; job: proc (): T {.closure.};
+              cb: proc (res: T) {.closure.};
+              onError: proc (err: ref CatchableError) {.closure.} = nil;
+              name = &quot;&quot;): TimerId" href="index.html#scheduleAt%2CTaskManager%2CDateTime%2Cproc%29%2Cproc%28T%29%2Cproc%28ref.CatchableError%29%2Cstring">supranim_tasks: proc scheduleAt[T](m: TaskManager; at: DateTime; job: proc (): T {.closure.};
+              cb: proc (res: T) {.closure.};
+              onError: proc (err: ref CatchableError) {.closure.} = nil;
+              name = &quot;&quot;): TimerId</a></li>
+          </ul></dd>
+<dt><a name="scheduleDaily" href="#scheduleDaily"><span>scheduleDaily:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="supranim_tasks: proc scheduleDaily[T](m: TaskManager; hour, minute: int; second = 0;
+                 job: proc (): T {.closure.}; cb: proc (res: T) {.closure.};
+                 onError: proc (err: ref CatchableError) {.closure.} = nil;
+                 name = &quot;&quot;): TimerId" href="index.html#scheduleDaily%2CTaskManager%2Cint%2Cint%2Cint%2Cproc%29%2Cproc%28T%29%2Cproc%28ref.CatchableError%29%2Cstring">supranim_tasks: proc scheduleDaily[T](m: TaskManager; hour, minute: int; second = 0;
+                 job: proc (): T {.closure.}; cb: proc (res: T) {.closure.};
+                 onError: proc (err: ref CatchableError) {.closure.} = nil;
+                 name = &quot;&quot;): TimerId</a></li>
+          </ul></dd>
+<dt><a name="scheduleWeekly" href="#scheduleWeekly"><span>scheduleWeekly:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="supranim_tasks: proc scheduleWeekly[T](m: TaskManager; weekday: WeekDay; hour, minute: int;
+                  second = 0; job: proc (): T {.closure.};
+                  cb: proc (res: T) {.closure.};
+                  onError: proc (err: ref CatchableError) {.closure.} = nil;
+                  name = &quot;&quot;): TimerId" href="index.html#scheduleWeekly%2CTaskManager%2CWeekDay%2Cint%2Cint%2Cint%2Cproc%29%2Cproc%28T%29%2Cproc%28ref.CatchableError%29%2Cstring">supranim_tasks: proc scheduleWeekly[T](m: TaskManager; weekday: WeekDay; hour, minute: int;
+                  second = 0; job: proc (): T {.closure.};
+                  cb: proc (res: T) {.closure.};
+                  onError: proc (err: ref CatchableError) {.closure.} = nil;
+                  name = &quot;&quot;): TimerId</a></li>
+          </ul></dd>
+<dt><a name="shutdown" href="#shutdown"><span>shutdown:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="supranim_tasks: proc shutdown(m: TaskManager)" href="index.html#shutdown%2CTaskManager">supranim_tasks: proc shutdown(m: TaskManager)</a></li>
           </ul></dd>
 <dt><a name="stop" href="#stop"><span>stop:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
-          data-doc-search-tag="supranim_tasks: proc stop(manager: TaskManager)" href="index.html#stop%2CTaskManager">supranim_tasks: proc stop(manager: TaskManager)</a></li>
+          data-doc-search-tag="supranim_tasks: proc stop(m: TaskManager)" href="index.html#stop%2CTaskManager">supranim_tasks: proc stop(m: TaskManager)</a></li>
           </ul></dd>
-<dt><a name="submitNewTask" href="#submitNewTask"><span>submitNewTask:</span></a></dt><dd><ul class="simple">
+<dt><a name="submit" href="#submit"><span>submit:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
-          data-doc-search-tag="supranim_tasks: proc submitNewTask(manager: TaskManager; id: string; work: TaskProc): bool" href="index.html#submitNewTask%2CTaskManager%2Cstring%2CTaskProc">supranim_tasks: proc submitNewTask(manager: TaskManager; id: string; work: TaskProc): bool</a></li>
+          data-doc-search-tag="supranim_tasks: proc submit[T](m: TaskManager; job: proc (): T {.closure.};
+          cb: proc (res: T) {.closure.};
+          onError: proc (err: ref CatchableError) {.closure.} = nil): bool" href="index.html#submit%2CTaskManager%2Cproc%29%2Cproc%28T%29%2Cproc%28ref.CatchableError%29">supranim_tasks: proc submit[T](m: TaskManager; job: proc (): T {.closure.};
+          cb: proc (res: T) {.closure.};
+          onError: proc (err: ref CatchableError) {.closure.} = nil): bool</a></li>
           </ul></dd>
-<dt><a name="submitRepeatingTask" href="#submitRepeatingTask"><span>submitRepeatingTask:</span></a></dt><dd><ul class="simple">
+<dt><a name="submitDelayed" href="#submitDelayed"><span>submitDelayed:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
-          data-doc-search-tag="supranim_tasks: proc submitRepeatingTask(manager: TaskManager; every: Duration; task: Task;
-                    startIn: Option[Duration] = none(Duration)): bool" href="index.html#submitRepeatingTask%2CTaskManager%2CDuration%2CTask%2COption%5BDuration%5D">supranim_tasks: proc submitRepeatingTask(manager: TaskManager; every: Duration; task: Task;
-                    startIn: Option[Duration] = none(Duration)): bool</a></li>
+          data-doc-search-tag="supranim_tasks: proc submitDelayed[T](m: TaskManager; delayMs: int; job: proc (): T {.closure.};
+                 cb: proc (res: T) {.closure.};
+                 onError: proc (err: ref CatchableError) {.closure.} = nil;
+                 name = &quot;&quot;): TimerId" href="index.html#submitDelayed%2CTaskManager%2Cint%2Cproc%29%2Cproc%28T%29%2Cproc%28ref.CatchableError%29%2Cstring">supranim_tasks: proc submitDelayed[T](m: TaskManager; delayMs: int; job: proc (): T {.closure.};
+                 cb: proc (res: T) {.closure.};
+                 onError: proc (err: ref CatchableError) {.closure.} = nil;
+                 name = &quot;&quot;): TimerId</a></li>
           </ul></dd>
-<dt><a name="submitTask" href="#submitTask"><span>submitTask:</span></a></dt><dd><ul class="simple">
+<dt><a name="submitRepeating" href="#submitRepeating"><span>submitRepeating:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
-          data-doc-search-tag="supranim_tasks: proc submitTask(manager: TaskManager; delay: Duration; task: Task; repeatTask = false)" href="index.html#submitTask%2CTaskManager%2CDuration%2CTask">supranim_tasks: proc submitTask(manager: TaskManager; delay: Duration; task: Task; repeatTask = false)</a></li>
-          <li><a class="reference external"
-          data-doc-search-tag="supranim_tasks: proc submitTask(manager: TaskManager; task: Task): bool" href="index.html#submitTask%2CTaskManager%2CTask">supranim_tasks: proc submitTask(manager: TaskManager; task: Task): bool</a></li>
+          data-doc-search-tag="supranim_tasks: proc submitRepeating[T](m: TaskManager; intervalMs: int; job: proc (): T {.closure.};
+                   cb: proc (res: T) {.closure.};
+                   onError: proc (err: ref CatchableError) {.closure.} = nil;
+                   name = &quot;&quot;): TimerId" href="index.html#submitRepeating%2CTaskManager%2Cint%2Cproc%29%2Cproc%28T%29%2Cproc%28ref.CatchableError%29%2Cstring">supranim_tasks: proc submitRepeating[T](m: TaskManager; intervalMs: int; job: proc (): T {.closure.};
+                   cb: proc (res: T) {.closure.};
+                   onError: proc (err: ref CatchableError) {.closure.} = nil;
+                   name = &quot;&quot;): TimerId</a></li>
           </ul></dd>
-<dt><a name="Task" href="#Task"><span>Task:</span></a></dt><dd><ul class="simple">
+<dt><a name="taskArmed" href="#taskArmed"><span>taskArmed:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
-          data-doc-search-tag="supranim_tasks: object Task" href="index.html#Task">supranim_tasks: object Task</a></li>
+          data-doc-search-tag="supranim_tasks: TaskStatus.taskArmed" href="index.html#taskArmed">supranim_tasks: TaskStatus.taskArmed</a></li>
+          </ul></dd>
+<dt><a name="taskCancelled" href="#taskCancelled"><span>taskCancelled:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="supranim_tasks: TaskStatus.taskCancelled" href="index.html#taskCancelled">supranim_tasks: TaskStatus.taskCancelled</a></li>
+          </ul></dd>
+<dt><a name="taskInactive" href="#taskInactive"><span>taskInactive:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="supranim_tasks: TaskStatus.taskInactive" href="index.html#taskInactive">supranim_tasks: TaskStatus.taskInactive</a></li>
           </ul></dd>
 <dt><a name="TaskManager" href="#TaskManager"><span>TaskManager:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
           data-doc-search-tag="supranim_tasks: type TaskManager" href="index.html#TaskManager">supranim_tasks: type TaskManager</a></li>
           </ul></dd>
-<dt><a name="TaskProc" href="#TaskProc"><span>TaskProc:</span></a></dt><dd><ul class="simple">
+<dt><a name="TaskStatus" href="#TaskStatus"><span>TaskStatus:</span></a></dt><dd><ul class="simple">
 <li><a class="reference external"
-          data-doc-search-tag="supranim_tasks: type TaskProc" href="index.html#TaskProc">supranim_tasks: type TaskProc</a></li>
+          data-doc-search-tag="supranim_tasks: enum TaskStatus" href="index.html#TaskStatus">supranim_tasks: enum TaskStatus</a></li>
+          </ul></dd>
+<dt><a name="taskStatus" href="#taskStatus"><span>taskStatus:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="supranim_tasks: proc taskStatus(m: TaskManager; name: string): TaskStatus" href="index.html#taskStatus%2CTaskManager%2Cstring">supranim_tasks: proc taskStatus(m: TaskManager; name: string): TaskStatus</a></li>
+          <li><a class="reference external"
+          data-doc-search-tag="supranim_tasks: proc taskStatus(m: TaskManager; id: TimerId): TaskStatus" href="index.html#taskStatus%2CTaskManager%2CTimerId">supranim_tasks: proc taskStatus(m: TaskManager; id: TimerId): TaskStatus</a></li>
+          </ul></dd>
+<dt><a name="taskUnknown" href="#taskUnknown"><span>taskUnknown:</span></a></dt><dd><ul class="simple">
+<li><a class="reference external"
+          data-doc-search-tag="supranim_tasks: TaskStatus.taskUnknown" href="index.html#taskUnknown">supranim_tasks: TaskStatus.taskUnknown</a></li>
           </ul></dd>
 </dl>
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2026-04-14 12:59:35 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2026-09-14 11:32:19 UTC</small>
       </div>
     </div>
   </div>
