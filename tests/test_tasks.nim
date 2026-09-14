@@ -27,13 +27,17 @@ template waitUntil(condExpr: untyped, timeoutMs: int): bool =
 template elapsedMs(t0: float): int =
   int((epochTime() - t0) * 1000)
 
+template checkSubmit(call: untyped) =
+  ## `submit` returns a `JobId`: assert it is a real id.
+  check call.isValid
+
 suite "task manager functionality":
   test "immediate submit delivers the result":
     var got: seq[int]
     var m = newTaskManager(poolSize = 2)
     check m.isRunning
     check m.poolSize == 2
-    check m.submit(proc(): int = 40 + 2, proc(res: int) =
+    checkSubmit m.submit(proc(): int = 40 + 2, proc(res: int) =
       withLock resLock:
         got.add(res))
     check waitUntil(got.len == 1, 2000)
@@ -76,7 +80,7 @@ suite "task manager functionality":
     var oks: seq[int]
     var errs: seq[string]
     var m = newTaskManager(poolSize = 2)
-    check m.submit(proc(): int = raise newException(ValueError, "boom"),
+    checkSubmit m.submit(proc(): int = raise newException(ValueError, "boom"),
       proc(res: int) =
         withLock resLock:
           oks.add(res),
@@ -94,7 +98,7 @@ suite "task manager functionality":
     var m = newTaskManager(poolSize = 1)
     m.stop()
     check not m.isRunning
-    check not m.submit(proc(): int = 1, proc(res: int) = discard)
+    check not m.submit(proc(): int = 1, proc(res: int) = discard).isValid
     expect CatchableError:
       discard m.submitDelayed(50, proc(): int = 1, proc(res: int) = discard)
     m.close()
@@ -175,14 +179,14 @@ suite "task manager never blocks":
     # One worker stuck 700ms in a job: 100 further submits must return
     # immediately (queueing), not after the worker frees up (~700ms+).
     var m = newTaskManager(poolSize = 1)
-    check m.submit(proc(): int =
+    checkSubmit m.submit(proc(): int =
       sleep(700)
       1, proc(res: int) = discard)
     sleep(50) # let the slow job occupy the worker
     let t0 = epochTime()
     for i in 1 .. 100:
       let v = i
-      check m.submit(proc(): int = v, proc(res: int) = discard)
+      checkSubmit m.submit(proc(): int = v, proc(res: int) = discard)
     check elapsedMs(t0) < 3000
     m.close()
 
@@ -192,7 +196,7 @@ suite "task manager never blocks":
     # and runs once the worker frees up — nothing is dropped.
     var got: seq[int]
     var m = newTaskManager(poolSize = 1)
-    check m.submit(proc(): int =
+    checkSubmit m.submit(proc(): int =
       sleep(800)
       1, proc(res: int) = discard)
     sleep(50)
@@ -217,8 +221,8 @@ suite "task manager never blocks":
       sleep(600)
       1
     let slowCb = proc(res: int) = discard
-    check m.submit(slowJob, slowCb)
-    check m.submit(slowJob, slowCb)
+    checkSubmit m.submit(slowJob, slowCb)
+    checkSubmit m.submit(slowJob, slowCb)
     sleep(50)
     let tickCb = proc(res: int) =
       withLock resLock:
@@ -234,7 +238,7 @@ suite "task manager never blocks":
     # start (worker side) is what we measure, not its delivery.
     var startedAt = 0.0
     var m = newTaskManager(poolSize = 2)
-    check m.submit(proc(): int = 1, proc(res: int) = sleep(500))
+    checkSubmit m.submit(proc(): int = 1, proc(res: int) = sleep(500))
     sleep(50) # fast job done, dispatch now stuck 500ms in its callback
     let t0 = epochTime()
     let markCb = proc(res: int) = discard
@@ -251,7 +255,7 @@ suite "task manager never blocks":
     # drain, or each other — even with the worker stuck and timers
     # pending, 40 ops complete far below any execution latency.
     var m = newTaskManager(poolSize = 1)
-    check m.submit(proc(): int =
+    checkSubmit m.submit(proc(): int =
       sleep(800)
       1, proc(res: int) = discard)
     sleep(50)
@@ -275,9 +279,137 @@ suite "task manager never blocks":
       let addCb = proc(res: int) =
         withLock resLock:
           got.add(res)
-      check m.submit(proc(): int = v, addCb)
+      checkSubmit m.submit(proc(): int = v, addCb)
     m.stop() # graceful: every queued job still runs and delivers
     check waitUntil(got.len == 10, 5000)
+    m.close()
+
+suite "immediate job cancellation":
+  test "cancelJob removes a queued job silently":
+    var ran = 0
+    var delivered = 0
+    var errs: seq[string]
+    var slowDone = false
+    var m = newTaskManager(poolSize = 1)
+    let slowCb = proc(res: int) =
+      withLock resLock:
+        slowDone = true
+    checkSubmit m.submit(proc(): int =
+      sleep(600)
+      1, slowCb)
+    sleep(50) # slow job occupies the only worker
+    let fastCb = proc(res: int) =
+      withLock resLock:
+        inc delivered
+    let fastErr = proc(err: ref CatchableError) =
+      withLock resLock:
+        errs.add(err.msg)
+    let fastJob = proc(): int =
+      withLock resLock:
+        inc ran
+      2
+    let id = m.submit(fastJob, fastCb, fastErr)
+    check id.isValid
+    check m.cancelJob(id) # still queued: never runs, stays silent
+    check not m.cancelJob(JobId(999_999))
+    check not m.cancelJob(JobId(0))
+    check waitUntil(slowDone, 3000)
+    sleep(300) # the skipped node passes through the worker by now
+    withLock resLock:
+      check ran == 0
+      check delivered == 0
+      check errs.len == 0
+    check not m.cancelJob(id) # already skipped: unknown
+    m.close()
+
+  test "cancelJob on a running job returns false, delivery normal":
+    var started = false
+    var got: seq[int]
+    var m = newTaskManager(poolSize = 1)
+    let runCb = proc(res: int) =
+      withLock resLock:
+        got.add(res)
+    let id = m.submit(proc(): int =
+      withLock resLock:
+        started = true
+      sleep(300)
+      42, runCb)
+    check id.isValid
+    check waitUntil(started, 2000)
+    check not m.cancelJob(id) # running: cannot preempt
+    check waitUntil(got.len == 1, 3000)
+    withLock resLock:
+      check got == @[42]
+    check not m.cancelJob(id) # delivered: unknown
+    m.close()
+
+  test "cancelJob from inside a callback":
+    # Capturing the manager handle here is safe: close() joins every
+    # pool thread before the manager can die — the same basis as the
+    # documented halt-from-callback pattern.
+    var ranC = 0
+    var cbFired = false
+    var cancelledFromCb = false
+    var idCslot = JobId(0)
+    var m = newTaskManager(poolSize = 1)
+    checkSubmit m.submit(proc(): int =
+      sleep(400)
+      0, proc(res: int) = discard)
+    sleep(50)
+    let cbA = proc(res: int) =
+      withLock resLock:
+        cbFired = true
+        cancelledFromCb = m.cancelJob(idCslot)
+    checkSubmit m.submit(proc(): int = 0, cbA)
+    let idB = m.submit(proc(): int =
+      sleep(300)
+      1, proc(res: int) = discard)
+    check idB.isValid
+    let jobC = proc(): int =
+      withLock resLock:
+        inc ranC
+      2
+    let cbC = proc(res: int) = discard
+    withLock resLock:
+      idCslot = m.submit(jobC, cbC)
+    check idCslot.isValid
+    check waitUntil(cbFired, 3000) # A ran; C still behind B
+    check cancelledFromCb
+    sleep(600) # B finishes, C's slot passes silently
+    withLock resLock:
+      check ranC == 0
+    m.close()
+
+  test "cancelJob under saturation, stop still drains":
+    var ran = 0
+    var m = newTaskManager(poolSize = 1)
+    checkSubmit m.submit(proc(): int =
+      sleep(500)
+      0, proc(res: int) = discard)
+    sleep(50)
+    var ids: seq[JobId]
+    for i in 1 .. 5:
+      let v = i
+      let cb = proc(res: int) = discard
+      ids.add(m.submit(proc(): int =
+        withLock resLock:
+          inc ran
+        v, cb))
+    check m.cancelJob(ids[0])
+    check m.cancelJob(ids[2])
+    check m.cancelJob(ids[4])
+    check not m.cancelJob(ids[0]) # already cancelled
+    m.stop() # graceful drain: slow job + 2 survivors run
+    withLock resLock:
+      check ran == 2
+    m.close()
+
+  test "submit after stop returns an invalid id":
+    var m = newTaskManager(poolSize = 1)
+    m.stop()
+    let id = m.submit(proc(): int = 1, proc(res: int) = discard)
+    check not id.isValid
+    check not m.cancelJob(id)
     m.close()
 
 suite "scheduled tasks":
@@ -297,6 +429,17 @@ suite "scheduled tasks":
     let nxt = nextWeeklyDelayMsFrom(nowT, wd, 9, 0, 0)
     check nxt > 6 * 24 * 3_600_000 # next week, ~7d minus 1h
     check nxt < 8 * 24 * 3_600_000
+
+  test "same-second echo rolls to the next day":
+    # A chain fire landing inside its own target second must not
+    # recompute a ~0ms delay and echo the occurrence twice.
+    let echoNow = dateTime(2026, mSep, 14, 10, 0, 0, 500_000_000,
+      local()).toTime
+    check nextDailyDelayMsFrom(echoNow, 10, 0, 0,
+      minLeadMs = 60_000) > 20 * 3_600_000
+    # ...while an explicit same-second schedule still fires ASAP.
+    check nextDailyDelayMsFrom(echoNow, 10, 0, 1,
+      minLeadMs = 1) < 2000
 
   test "scheduleAt future fires once":
     var got: seq[int]

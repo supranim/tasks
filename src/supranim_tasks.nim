@@ -11,6 +11,8 @@
 ## - Immediate work goes straight to the pool: jobs run on worker
 ##   threads, `cb`/`onError` fire serialized on the pool dispatch
 ##   thread (never on the caller's thread — lock shared state there).
+##   `submit` returns a `JobId`; `cancelJob` removes a still-queued
+##   job synchronously (running jobs cannot be preempted).
 ## - Everything for the scheduler thread (timer registration, cancels,
 ##   removals, halts, loop stop) crosses as a `SchedOp`: one proc plus
 ##   one unmanaged arg. A heartbeat callback drains the pending ops on
@@ -105,6 +107,31 @@ type
     taskInactive   ## Past `scheduleAt`: tracked but never armed, never fires.
     taskUnknown    ## No such task: fired, removed, or never existed.
 
+  JobId* = distinct int
+    ## Handle for one immediate (`submit`) job. `JobId(0)` is invalid
+    ## (submission rejected while stopping/closed).
+
+  JobState = enum
+    ## Immediate-job lifecycle. `jsQueued` is the only cancellable
+    ## state; both transitions out of it are serialized under
+    ## `ctl.lock`, so exactly one of (run) or (cancel) wins.
+    jsQueued, jsRunning, jsCancelled
+
+  JobCell = ptr JobCellObj
+  JobCellObj = object
+    ## Unmanaged per-job cell: a plain state machine, no managed
+    ## fields, so any thread may touch it under `ctl.lock`.
+    ## Allocated on the submitting thread; freed on the dispatch
+    ## thread after delivery/skip, or by the post-join `reapJobs`
+    ## walk. Lifetime is covered by the `jobs` entry: removal and
+    ## free happen together under the lock.
+    state: JobState
+
+  JobSkipped = object of CatchableError
+    ## Private signal: a cancelled immediate job reaching a worker.
+    ## Swallowed by the dispatch wrapper — user callbacks never see
+    ## it (cancellation is silent, like dropping a timer).
+
   SchedKind = enum
     ## How a payload's timer is (re-)armed. `skPlain` is the classic
     ## delay/interval path; `skAt` arms once at a Unix-ms target (or
@@ -152,6 +179,15 @@ type
       ## Synthetic-id source for past `scheduleAt` tasks (no powpow
       ## timer node exists for them). Counts down from -1; powpow ids
       ## are positive, so the ranges never collide.
+    jobs: Table[int, JobCell]
+      ## Immediate jobs by id. Entries hold one unmanaged cell
+      ## pointer each — lock-guarded count ops stay acyclic. An entry
+      ## lives from `submit` until dispatch delivery/skip, or until
+      ## the post-join `reapJobs` walk (`shutdown` discards queued
+      ## nodes whose dispatch never runs).
+    jobSeq: int
+      ## Immediate-job id source. Counts up from 1; `0` stays the
+      ## invalid sentinel.
 
   TimerPayload[T] = ptr TimerPayloadObj[T]
   TimerPayloadObj[T] = object
@@ -206,6 +242,70 @@ type
     ## the payload `name` field already performs.
     name: string
 
+proc `==`*(a, b: JobId): bool {.borrow.}
+  ## Job ids compare by value; `JobId(0)` is the invalid sentinel.
+
+proc isValid*(id: JobId): bool {.inline.} =
+  ## True for a real submission id (anything but `JobId(0)`).
+  id != JobId(0)
+
+proc forgetJob(ctl: ptr CtlBlock, id: int) =
+  ## Drop one immediate job's tracking entry and free its cell. Takes
+  ## `ctl.lock`; used on the dispatch thread after delivery/skip and
+  ## on the submitting thread when the pool rejects the wrapped job.
+  withLock(ctl.lock):
+    if ctl.jobs.hasKey(id):
+      deallocShared(ctl.jobs[id])
+      ctl.jobs.del(id)
+
+proc reapJobs(ctl: ptr CtlBlock) =
+  ## Free cells of immediate jobs that never reached dispatch
+  ## (queued-and-discarded at `shutdown`, or strays). Runs only where
+  ## pool threads are provably joined by this thread — after
+  ## `closeThreadPool`/`shutdownThreadPool` here, or in the `close`
+  ## walk — so no worker or dispatch callback can touch them.
+  withLock(ctl.lock):
+    for _, cell in ctl.jobs:
+      deallocShared(cell)
+    ctl.jobs.clear()
+
+proc wrapJob[T](ctl: ptr CtlBlock, cell: JobCell,
+    job: proc(): T {.closure.}): proc(): T {.closure.} =
+  ## Worker-side gate for one immediate job. The queued-to-running
+  ## transition is serialized with `cancelJob` under `ctl.lock`:
+  ## exactly one wins. Losers raise `JobSkipped`, which the pool
+  ## routes to the dispatch wrapper for a silent drop. Captures are
+  ## two raw pointers plus the user closure — acyclic, safe to post.
+  result = proc(): T =
+    var run = false
+    withLock(ctl.lock):
+      if cell.state == jsQueued:
+        cell.state = jsRunning
+        run = true
+    if not run:
+      raise newException(JobSkipped, "job cancelled while queued")
+    job()
+
+proc wrapCb[T](ctl: ptr CtlBlock, id: int,
+    cb: proc(res: T) {.closure.}): proc(res: T) {.closure.} =
+  ## Dispatch-side delivery: forget tracking first (safe even if the
+  ## user callback raises), then deliver.
+  result = proc(res: T) =
+    forgetJob(ctl, id)
+    cb(res)
+
+proc wrapOnError[T](ctl: ptr CtlBlock, id: int,
+    onError: proc(err: ref CatchableError) {.closure.}):
+    proc(err: ref CatchableError) {.closure.} =
+  ## Dispatch-side failure path: skips stay silent, real failures go
+  ## to the user handler. Tracking is forgotten first, as in `wrapCb`.
+  result = proc(err: ref CatchableError) =
+    forgetJob(ctl, id)
+    if err of JobSkipped:
+      return
+    if onError != nil:
+      onError(err)
+
 proc markDead(p: pointer) {.inline.} =
   ## Flag a payload dead through its first field (see `TimerPayloadObj`).
   cast[ptr Atomic[bool]](p)[].store(true)
@@ -237,41 +337,49 @@ proc forgetTask(ctl: ptr CtlBlock, id: TimerId) =
         ctl.byName.del(rec.name)
       ctl.byId.del(int(id))
 
-proc nextDailyDelayMsFrom*(nowT: Time, hour, minute, second: int): int =
+proc nextDailyDelayMsFrom*(nowT: Time, hour, minute, second: int,
+    minLeadMs = 1000): int =
   ## Milliseconds from `nowT` to the next local `hour:minute:second`
-  ## (today when still future, else tomorrow). Public so callers can
-  ## preview when a daily task will fire.
+  ## at least `minLeadMs` out (today when still future enough, else
+  ## tomorrow, stepping whole days so DST stays calendar-correct).
+  ## Public so callers can preview when a daily task will fire. The
+  ## lead exists for chains: a fire landing inside its own target
+  ## second would otherwise recompute a ~0ms delay and echo the same
+  ## occurrence twice.
   let nowDt = nowT.local()
   var target = dateTime(nowDt.year, nowDt.month, nowDt.monthday,
     hour, minute, second, 0, local())
   var diffMs = inMilliseconds(target.toTime - nowT)
-  if diffMs <= 0:
+  while diffMs < minLeadMs:
     target = target + initDuration(days = 1)
     diffMs = inMilliseconds(target.toTime - nowT)
   int(diffMs)
 
-proc nextDailyDelayMs(hour, minute, second: int): int =
-  nextDailyDelayMsFrom(getTime(), hour, minute, second)
+proc nextDailyDelayMs(hour, minute, second: int,
+    minLeadMs = 1000): int =
+  nextDailyDelayMsFrom(getTime(), hour, minute, second, minLeadMs)
 
 proc nextWeeklyDelayMsFrom*(nowT: Time, weekday: WeekDay,
-    hour, minute, second: int): int =
+    hour, minute, second: int, minLeadMs = 1000): int =
   ## Milliseconds from `nowT` to the next local `weekday` +
-  ## `hour:minute:second` (this week when still future, else next
-  ## week). Public so callers can preview when a weekly task fires.
+  ## `hour:minute:second` at least `minLeadMs` out (this week when
+  ## still future enough, else next week, stepping whole weeks).
+  ## Same echo protection as `nextDailyDelayMsFrom`.
   let nowDt = nowT.local()
   var target = dateTime(nowDt.year, nowDt.month, nowDt.monthday,
     hour, minute, second, 0, local())
   let daysAhead = (ord(weekday) - ord(nowDt.weekday) + 7) mod 7
   target = target + initDuration(days = daysAhead)
   var diffMs = inMilliseconds(target.toTime - nowT)
-  if diffMs <= 0:
+  while diffMs < minLeadMs:
     target = target + initDuration(days = 7)
     diffMs = inMilliseconds(target.toTime - nowT)
   int(diffMs)
 
-proc nextWeeklyDelayMs(weekdayOrd, hour, minute, second: int): int =
+proc nextWeeklyDelayMs(weekdayOrd, hour, minute, second: int,
+    minLeadMs = 1000): int =
   nextWeeklyDelayMsFrom(getTime(), WeekDay(weekdayOrd),
-    hour, minute, second)
+    hour, minute, second, minLeadMs)
 
 proc firePayload[T](p: TimerPayload[T])
 
@@ -285,10 +393,14 @@ proc fireChain[T](p: TimerPayload[T], ctl: ptr CtlBlock,
   ## are dropped without re-arming — the entry stays for `close`, like
   ## a plain cancelled timer, so `taskStatus` keeps reporting it.
   var sched = cast[Loop](p.schedRaw)
+  # Chains demand a 60s lead: anything nearer is the same-second echo
+  # of the occurrence just fired (see the helpers), never a legit
+  # next day/week (those sit ~23h/7d out).
   let delayMs = if p.kind == skDaily:
-    nextDailyDelayMs(p.hour, p.minute, p.second)
+    nextDailyDelayMs(p.hour, p.minute, p.second, 60_000)
   else:
-    nextWeeklyDelayMs(p.weekdayOrd, p.hour, p.minute, p.second)
+    nextWeeklyDelayMs(p.weekdayOrd, p.hour, p.minute, p.second,
+      60_000)
   let oldId = int(p.id)
   discard pool.submitWork(p.job, p.cb, p.onError)
   withLock(ctl.lock):
@@ -391,12 +503,14 @@ proc doRegister[T](ctl: ptr CtlBlock, raw: pointer) {.nimcall, gcsafe.} =
         elif p.kind == skPlain:
           p.id = sched.addTimer(p.delayMs, fire)
         elif p.kind == skDaily:
+          # Explicit schedule: fire ASAP (lead 1ms). The echo guard
+          # lives in the chain re-arm (`fireChain`), not here.
           p.id = sched.addTimer(
-            nextDailyDelayMs(p.hour, p.minute, p.second), fire)
+            nextDailyDelayMs(p.hour, p.minute, p.second, 1), fire)
         else:
           p.id = sched.addTimer(
             nextWeeklyDelayMs(p.weekdayOrd, p.hour, p.minute,
-              p.second), fire)
+              p.second, 1), fire)
         ctl.byId[int(p.id)] = TaskRec(payload: raw,
           free: freePayload[T], name: p.name,
           isInterval: p.isInterval, armed: true)
@@ -530,6 +644,7 @@ proc haltFire(ctlRaw: pointer): TimerCallback =
     var pool = cast[ThreadPool](ctl.poolRaw)
     closeThreadPool(pool)
     wasMoved(pool)
+    ctl.reapJobs() # drained: only dispatch-removed entries are gone
 
 proc doHalt(ctl: ptr CtlBlock, raw: pointer) {.nimcall, gcsafe.} =
   ## Arm the delayed stop timer.
@@ -662,21 +777,51 @@ proc hasTask*(m: TaskManager, id: TimerId): bool =
 proc submit*[T](m: TaskManager,
     job: proc(): T {.closure.},
     cb: proc(res: T) {.closure.},
-    onError: proc(err: ref CatchableError) {.closure.} = nil): bool =
+    onError: proc(err: ref CatchableError) {.closure.} = nil): JobId =
   ## Queue `job` for immediate execution on a pool worker. `cb(res)`
   ## fires on the pool dispatch thread; `onError(err)` instead when
-  ## the job raises. Returns false when stopping/closed or the pool
-  ## is already torn down — then neither callback fires.
+  ## the job raises. Returns a `JobId` for `cancelJob`, or `JobId(0)`
+  ## when stopping/closed or the pool is already torn down — then
+  ## neither callback fires.
   ##
   ## Thread-safe: may be called from any thread, including from inside
   ## callbacks. See the module contract about captured references.
   if m.closed.load:
+    return JobId(0)
+  let ctl = cast[ptr CtlBlock](m.ctl)
+  var cell = cast[JobCell](allocShared0(sizeof(JobCellObj)))
+  cell.state = jsQueued
+  var id = 0
+  withLock(ctl.lock):
+    if ctl.stopping:
+      deallocShared(cell)
+      return JobId(0)
+    inc ctl.jobSeq
+    id = ctl.jobSeq
+    ctl.jobs[id] = cell
+  if not m.pool.submitWork(wrapJob[T](ctl, cell, job),
+      wrapCb[T](ctl, id, cb), wrapOnError[T](ctl, id, onError)):
+    ctl.forgetJob(id)
+    return JobId(0)
+  JobId(id)
+
+proc cancelJob*(m: TaskManager, id: JobId): bool =
+  ## Cancel one immediate job by id. Returns true iff the job was
+  ## still queued: it will never run and neither callback fires. A
+  ## running, finished or unknown id returns false — a running job
+  ## runs to completion and delivers normally (jobs cannot be
+  ## preempted). Takes effect synchronously (lock-guarded, no
+  ## heartbeat delay), so a true return is authoritative at call time.
+  ## Thread-safe, including from inside callbacks.
+  if m.closed.load:
     return false
   let ctl = cast[ptr CtlBlock](m.ctl)
   withLock(ctl.lock):
-    if ctl.stopping:
-      return false
-  m.pool.submitWork(job, cb, onError)
+    if ctl.jobs.hasKey(int(id)) and
+        ctl.jobs[int(id)].state == jsQueued:
+      ctl.jobs[int(id)].state = jsCancelled
+      return true
+  false
 
 proc schedule[T](m: TaskManager, isInterval: bool, delayMs: int,
     name: string, job: proc(): T {.closure.},
@@ -914,18 +1059,24 @@ proc beginStop(m: TaskManager): bool =
 proc stop*(m: TaskManager) =
   ## Graceful stop: reject new submissions, drop pending timers, let
   ## the pool drain queued jobs (every queued job still runs and
-  ## delivers). Blocks until the pool is torn down. Idempotent. Must
-  ## run outside pool jobs/callbacks (it joins pool threads).
+  ## delivers, cancelled immediates stay silent). Blocks until the
+  ## pool is torn down. Idempotent. Must run outside pool
+  ## jobs/callbacks (it joins pool threads).
   if m.beginStop:
     closeThreadPool(m.pool)
+    let ctl = cast[ptr CtlBlock](m.ctl)
+    ctl.reapJobs()
 
 proc shutdown*(m: TaskManager) =
   ## Immediate stop: like `stop`, but jobs still queued (never
-  ## started) are discarded — their callbacks never fire. In-flight
-  ## jobs finish and deliver. Blocks. Idempotent. Must run outside
-  ## pool jobs/callbacks (it joins pool threads).
+  ## started) are discarded — their callbacks never fire, and their
+  ## job cells are reaped here. In-flight jobs finish and deliver.
+  ## Blocks. Idempotent. Must run outside pool jobs/callbacks (it
+  ## joins pool threads).
   if m.beginStop:
     shutdownThreadPool(m.pool)
+    let ctl = cast[ptr CtlBlock](m.ctl)
+    ctl.reapJobs()
 
 proc halt*(m: TaskManager, delayMs: int): bool {.discardable.} =
   ## Gracefully `stop` the manager after `delayMs` milliseconds
@@ -970,6 +1121,9 @@ proc close*(m: TaskManager) =
     ctl.byId.clear()
     ctl.byName.clear()
     ctl.superseded.clear()
+    for _, cell in ctl.jobs:
+      deallocShared(cell)
+    ctl.jobs.clear()
   m.sched.close()
   deinitCond(ctl.startedCond)
   deinitLock(ctl.lock)
@@ -981,7 +1135,7 @@ when isMainModule:
   var m = newTaskManager(poolSize = 2)
   assert m.isRunning
   assert m.submit(proc(): string = "hello", proc(res: string) =
-    echo "immediate: ", res)
+    echo "immediate: ", res).isValid
   let once = m.submitDelayed(100, proc(): int = 40 + 2, proc(res: int) =
     echo "delayed: ", res)
   echo "scheduled one-shot: ", int(once)
