@@ -905,7 +905,7 @@ proc scheduleAt*[T](m: TaskManager, at: DateTime,
     job: proc(): T {.closure.},
     cb: proc(res: T) {.closure.},
     onError: proc(err: ref CatchableError) {.closure.} = nil,
-    name = ""): TimerId =
+    name = ""): TimerId {.discardable.} =
   ## Run `job` once at wall-clock `at` (local time, then like
   ## `submit`). Returns the timer id for `cancelTask`/`removeTask` and
   ## `taskStatus`. A past `at` never fires: the task stays tracked as
@@ -919,7 +919,7 @@ proc scheduleDaily*[T](m: TaskManager, hour, minute: int, second = 0,
     job: proc(): T {.closure.},
     cb: proc(res: T) {.closure.},
     onError: proc(err: ref CatchableError) {.closure.} = nil,
-    name = ""): TimerId =
+    name = ""): TimerId  {.discardable.} =
   ## Run `job` every day at local `hour:minute:second` (then like
   ## `submit` per fire). Returns the first timer id; each occurrence
   ## re-arms for the next day, recomputed from local `now()` so DST
@@ -938,7 +938,7 @@ proc scheduleWeekly*[T](m: TaskManager, weekday: WeekDay,
     job: proc(): T {.closure.},
     cb: proc(res: T) {.closure.},
     onError: proc(err: ref CatchableError) {.closure.} = nil,
-    name = ""): TimerId =
+    name = ""): TimerId  {.discardable.} =
   ## Run `job` every week on `weekday` at local `hour:minute:second`
   ## (then like `submit` per fire). Same chaining, cancellation and
   ## error rules as `scheduleDaily`.
