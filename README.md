@@ -13,6 +13,7 @@
 </p>
 
 ## Key features
+- Built on PowPow event loop & ThreadPool
 - Immediate, delayed (one-shot) and repeating (interval) background tasks
 - Immediate jobs cancel by id: `submit` returns a `JobId`, `cancelJob`
   drops a still-queued job synchronously (silent, authoritative bool)
@@ -20,9 +21,6 @@
   `DateTime`, daily and weekly repeats
 - Past one-shot times never fire: the task stays tracked as inactive,
   observable via `taskStatus`, with no warning
-- Built on powpow: a `ThreadPool` for execution plus a private scheduler event loop
-- Framework-agnostic and dependency-light: only `powpow` and the standard library
-- No C libraries, no event loop to drive, no `libevent`
 - Thread-safe submission from any thread, including from inside callbacks
 
 > [!NOTE]
